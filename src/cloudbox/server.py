@@ -1,15 +1,10 @@
 import argparse
 from flask import app
 
-from server_utils import app_paths
+from cloudbox.server_utils.paths import app_paths
 
-#  APP
 from cloudbox.app import create_app
-
-#  DATABASE
 from cloudbox.database import Database
-
-#  CONFIGS
 from cloudbox.config.settings import APP_NAME
 
 
