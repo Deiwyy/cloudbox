@@ -10,10 +10,11 @@ from cloudbox.database.migrations import run_migrations
 from cloudbox.config.settings import APP_NAME
 from cloudbox.logger import configure_logging
 
+from cloudbox.services import AuthService
+
 logger = logging.getLogger(__name__)
 
 def main():
-
     #  ARGS
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true")
@@ -40,7 +41,12 @@ def main():
     database.initialize()
     run_migrations(database)
 
+    #  AUTH SERVICE CONFIG
+    auth_service = AuthService(database)
+
+    #  EXTENSIONS CONFIG
     app.extensions["database"] = database
+    app.extensions["auth_service"] = auth_service
 
     # RUN APP
     app.run(
