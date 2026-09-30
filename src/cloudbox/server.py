@@ -2,12 +2,12 @@ import argparse
 import logging
 from flask import app
 
+from cloudbox.config.settings import Settings
 from cloudbox.server_utils.paths import app_paths
 
 from cloudbox.app import create_app
 from cloudbox.database import Database
 from cloudbox.database.migrations import run_migrations
-from cloudbox.config.settings import APP_NAME
 from cloudbox.logger import configure_logging
 
 from cloudbox.services import AuthService
@@ -15,17 +15,23 @@ from cloudbox.services import AuthService
 logger = logging.getLogger(__name__)
 
 def main():
+
     #  ARGS
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--config", type=str, default="config/cloudbox.toml")
     args = parser.parse_args()
+
+    #  SETTINGS
+    settings = Settings(args.config)
 
     #  APP CREATION
     app = create_app()
-    
+    app.config["SECRET_KEY"] = settings["flask"]["secret_key"]
+
     #  PATHS CONFIG
-    paths = app_paths(APP_NAME)
-    app.config["APP_NAME"] = APP_NAME
+    paths = app_paths(settings["app"]["name"])
+    app.config["APP_NAME"] = settings["app"]["name"]
     app.config["APP_DATA"] = paths["data"]
     app.config["APP_CONFIG"] = paths["config"]
     app.config["APP_LOG"] = paths["log"]
@@ -44,7 +50,6 @@ def main():
     #  AUTH SERVICE CONFIG
     auth_service = AuthService(database)
 
-    #  EXTENSIONS CONFIG
     app.extensions["database"] = database
     app.extensions["auth_service"] = auth_service
 
