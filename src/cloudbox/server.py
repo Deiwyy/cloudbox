@@ -1,12 +1,16 @@
 import argparse
+import logging
 from flask import app
 
 from cloudbox.server_utils.paths import app_paths
 
 from cloudbox.app import create_app
 from cloudbox.database import Database
+from cloudbox.database.migrations import run_migrations
 from cloudbox.config.settings import APP_NAME
+from cloudbox.logger import configure_logging
 
+logger = logging.getLogger(__name__)
 
 def main():
 
@@ -23,10 +27,18 @@ def main():
     app.config["APP_NAME"] = APP_NAME
     app.config["APP_DATA"] = paths["data"]
     app.config["APP_CONFIG"] = paths["config"]
+    app.config["APP_LOG"] = paths["log"]
+
+    #  LOGGING CONFIG
+    configure_logging(
+        log_file=paths["log"] / "cloudbox.log",
+        level=app.config.get("LOG_LEVEL", "DEBUG" if args.debug else "INFO"),
+    )
 
     #  DATABASE CONFIG AND INITIALIZATION  
     database = Database(app.config["APP_DATA"] / "database" / "cloudbox.db")
     database.initialize()
+    run_migrations(database)
 
     app.extensions["database"] = database
 

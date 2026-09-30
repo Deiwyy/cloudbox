@@ -17,4 +17,5 @@ def app_paths(name: str) -> dict[str, Path]:
         "code": APPS_DIR / name,
         "data": DATA_DIR / name,
         "config": CONFIG_DIR / name,
+        "log": LOG_DIR / name,
     }

@@ -135,6 +135,13 @@ class Session:
     ) -> list[Any]:
         return self.execute(sql, parameters).fetchall()
 
+    def count(
+        self,
+        sql: str,
+        parameters: Iterable[Any] = (),
+    ) -> int:
+        return len(self.fetchall(sql, parameters))
+
     def commit(self) -> None:
         self._ensure_open()
         self.connection.commit()
