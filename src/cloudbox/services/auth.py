@@ -4,18 +4,14 @@ from cloudbox.database import Database
 
 
 class AuthService:
-    def __init__(self, database: Database):
-        self.database = database
+    def __init__(self, db: Database):
+        self.db = db
 
-    def create_user(
-        self,
-        username: str,
-        password: str,
-    ) -> int:
+    def add_user(self, username: str, password: str) -> int:
         password_hash = generate_password_hash(password)
 
-        with self.database.session() as db:
-            cursor = db.execute(
+        with self.db.session() as session:
+            cursor = session.execute(
                 """
                 INSERT INTO users (
                     username,
@@ -28,12 +24,20 @@ class AuthService:
 
             return cursor.lastrowid
 
-    def get_user_by_username(
-        self,
-        username: str,
-    ) -> dict | None:
-        with self.database.session() as db:
-            return db.fetchone(
+    def get_user(self, user_id: int) -> dict | None:
+        with self.db.session() as session:
+            return session.fetchone(
+                """
+                SELECT *
+                FROM users
+                WHERE id = ?
+                """,
+                (user_id,),
+            )
+
+    def get_user_by_username(self, username: str) -> dict | None:
+        with self.db.session() as session:
+            return session.fetchone(
                 """
                 SELECT *
                 FROM users
@@ -52,7 +56,7 @@ class AuthService:
             password,
         )
 
-    def authenticate(
+    def authenticate_user(
         self,
         username: str,
         password: str,

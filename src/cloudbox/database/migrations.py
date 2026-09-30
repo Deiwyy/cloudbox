@@ -1,6 +1,6 @@
 import logging
 
-from cloudbox.database import Database, Session
+from .database import Database, Session
 
 logger = logging.getLogger(__name__)
 

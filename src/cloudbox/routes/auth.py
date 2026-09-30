@@ -1,58 +1,29 @@
+from flask import Blueprint, request, current_app, render_template, redirect, url_for, flash
 
-from flask import (
-    Blueprint,
-    current_app,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
-)
+from cloudbox.services.auth import AuthService
 
-from cloudbox.services import AuthService
+auth_bp = Blueprint("auth", __name__, url_prefix="/")
 
 
-auth_bp = Blueprint(
-    "auth",
-    __name__,
-    url_prefix="/",
-)
-
-
-@auth_bp.route("/login", methods=["GET", "POST"])
+@auth_bp.route("/login", methods=["POST", "GET"])
 def login():
-    if request.method == "GET":
-        return render_template("auth/login.html")
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
 
-    username = request.form.get("username", "").strip()
-    password = request.form.get("password", "")
+        auth: AuthService = current_app.extensions["auth"]         
 
-    auth_service: AuthService = current_app.extensions["auth_service"]
-    user = auth_service.authenticate(username, password)
+        user = auth.authenticate_user(username, password)
 
-    if user is None:
-        return render_template(
-            "auth/login.html",
-            error="Invalid username or password.",
-            username=username,
-        ), 401
+        if user:
+            flash("Login successful!", "success")
+            return redirect("/")
+        else:
+            flash("Invalid username or password.", "danger")
+            return redirect(url_for("auth.login", error="invalid"))
 
-    session.clear()
-    session["user_id"] = user["id"]
+    error = request.args.get("error")
 
-    return redirect("/")
+    return render_template("auth/login.html", error=error)
 
-
-@auth_bp.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "GET":
-        return render_template("auth/register.html")
-
-    username = request.form.get("username", "").strip()
-    password = request.form.get("password", "")
-
-    auth_service: AuthService = current_app.extensions["auth_service"]
-    user_id = auth_service.create_user(username, password)
-
-    return redirect(url_for("auth.login"))
-
+    return "Login Page", 200

@@ -1,61 +1,24 @@
 import argparse
-import logging
-from flask import app
+import tomllib
 
-from cloudbox.config.settings import Settings
-from cloudbox.server_utils.paths import app_paths
-
+from cloudbox.database import Database, Session, run_migrations
 from cloudbox.app import create_app
-from cloudbox.database import Database
-from cloudbox.database.migrations import run_migrations
-from cloudbox.logger import configure_logging
-
-from cloudbox.services import AuthService
-
-logger = logging.getLogger(__name__)
 
 def main():
-
-    #  ARGS
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str)
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--config", type=str, default="config/cloudbox.toml")
+
     args = parser.parse_args()
+    
+    with open(args.config, "rb") as file:
+        config = tomllib.load(file)
 
-    #  SETTINGS
-    settings = Settings(args.config)
+    app = create_app(config)
 
-    #  APP CREATION
-    app = create_app()
-    app.config["SECRET_KEY"] = settings["flask"]["secret_key"]
-
-    #  PATHS CONFIG
-    paths = app_paths(settings["app"]["name"])
-    app.config["APP_NAME"] = settings["app"]["name"]
-    app.config["APP_DATA"] = paths["data"]
-    app.config["APP_CONFIG"] = paths["config"]
-    app.config["APP_LOG"] = paths["log"]
-
-    #  LOGGING CONFIG
-    configure_logging(
-        log_file=paths["log"] / "cloudbox.log",
-        level=app.config.get("LOG_LEVEL", "DEBUG" if args.debug else "INFO"),
-    )
-
-    #  DATABASE CONFIG AND INITIALIZATION  
-    database = Database(app.config["APP_DATA"] / "database" / "cloudbox.db")
-    database.initialize()
-    run_migrations(database)
-
-    #  AUTH SERVICE CONFIG
-    auth_service = AuthService(database)
-
-    app.extensions["database"] = database
-    app.extensions["auth_service"] = auth_service
-
-    # RUN APP
     app.run(
-        host="127.0.0.1",
-        port=5000,
-        debug=args.debug,
+        host=config["flask"]["host"],
+        port=config["flask"]["port"],
+        load_dotenv=False,
+        debug=args.debug
     )
